@@ -22,15 +22,11 @@
  * 	\brief		This file is an example module setup page
  * 				Put some comments here
  */
-// Dolibarr environment
-$res = @include("../../main.inc.php"); // From htdocs directory
-if (! $res) {
-    $res = @include("../../../main.inc.php"); // From "custom" directory
-}
 
 // Libraries
-require_once DOL_DOCUMENT_ROOT . "/core/lib/admin.lib.php";
+require '../config.php';
 require_once '../lib/exportprodeb.lib.php';
+require_once DOL_DOCUMENT_ROOT . '/core/lib/admin.lib.php';
 
 // Translations
 $langs->load("exportprodeb@exportprodeb");
@@ -40,86 +36,95 @@ if (! $user->admin) {
     accessforbidden();
 }
 
-// Parameters
-$action = GETPOST('action', 'alpha');
+$action=__get('action','');
 
-/*
- * Actions
- */
-if (preg_match('/set_(.*)/',$action,$reg))
-{
-	$code=$reg[1];
-	if (dolibarr_set_const($db, $code, GETPOST($code), 'chaine', 0, '', $conf->entity) > 0)
-	{
-		header("Location: ".$_SERVER["PHP_SELF"]);
-		exit;
-	}
-	else
-	{
-		dol_print_error($db);
-	}
-}
+if($action=='save') {
 	
-if (preg_match('/del_(.*)/',$action,$reg))
-{
-	$code=$reg[1];
-	if (dolibarr_del_const($db, $code, 0) > 0)
-	{
-		Header("Location: ".$_SERVER["PHP_SELF"]);
-		exit;
+	foreach($_REQUEST['TParamProDeb'] as $name=>$param) {
+		
+		dolibarr_set_const($db, $name, $param);
+
 	}
-	else
-	{
-		dol_print_error($db);
-	}
+	
 }
 
-/*
- * View
- */
-$page_name = "exportprodebSetup";
-llxHeader('', $langs->trans($page_name));
+llxHeader('',"Paramétrage de l'export proDEB",'');
 
-// Subheader
-$linkback = '<a href="' . DOL_URL_ROOT . '/admin/modules.php">'
-    . $langs->trans("BackToModuleList") . '</a>';
-print_fiche_titre($langs->trans($page_name), $linkback);
+$linkback='<a href="'.DOL_URL_ROOT.'/admin/modules.php">'.$langs->trans("BackToModuleList").'</a>';
+print_fiche_titre("Paramétrage de l'export proDEB",$linkback,'setup');
 
-// Configuration header
-$head = exportprodebAdminPrepareHead();
-dol_fiche_head(
-    $head,
-    'settings',
-    $langs->trans("Module104994Name"),
-    0,
-    "exportprodeb@exportprodeb"
-);
+$form=new TFormCore;
 
-// Setup page goes here
-$form=new Form($db);
-$var=false;
-print '<table class="noborder" width="100%">';
-print '<tr class="liste_titre">';
-print '<td>'.$langs->trans("Parameters").'</td>'."\n";
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="center" width="100">'.$langs->trans("Value").'</td>'."\n";
+showParameters($form);
 
+function showParameters(&$form) {
+	global $db,$conf,$langs;
+	
+	$langs->load('exportprodeb@exportprodeb');
+	
+	$html=new Form($db);
+	
+	?><form action="<?php echo $_SERVER['PHP_SELF'] ?>" name="save" method="POST">
+		<input type="hidden" name="action" value="save" />
+	<table width="100%" class="noborder" style="background-color: #fff;">
+		<tr class="liste_titre">
+			<td colspan="2"><?php echo $langs->trans('Parameters') ?></td>
+		</tr>
+		
+		<tr>
+			<td><?php echo $langs->trans('EXPORT_PRO_DEB_NUM_AGREMENT') ?></td><td><?php echo $form->texte('','TParamProDeb[EXPORT_PRO_DEB_NUM_AGREMENT]',$conf->global->EXPORT_PRO_DEB_NUM_AGREMENT,30,255); ?></td>				
+		</tr>
+		
+		<tr>
+			<td><?php echo $langs->trans('EpasserelleProductFilename') ?></td><td><?php echo $form->texte('','TParamProDeb[DOL_EPASSERELLE_PRODUCT_FILENAME]',$conf->global->DOL_EPASSERELLE_PRODUCT_FILENAME,30,255); ?></td>				
+		</tr>
+		
+		<tr>
+			<td><?php echo $langs->trans('EpasserelleStockFilename') ?></td><td><?php echo $form->texte('','TParamProDeb[DOL_EPASSERELLE_STOCK_FILENAME]',$conf->global->DOL_EPASSERELLE_STOCK_FILENAME,30,255); ?></td>				
+		</tr>
+		
+		<tr>
+			<td><?php echo $langs->trans('EpasserelleCommandeFilename') ?></td><td><?php echo $form->texte('','TParamProDeb[DOL_EPASSERELLE_COMMANDE_FILENAME]',$conf->global->DOL_EPASSERELLE_COMMANDE_FILENAME,30,255); ?></td>				
+		</tr>
+		
+		<tr>
+			<td><?php echo $langs->trans('EpasserelleFTPFilemask') ?></td><td><?php echo $form->texte('','TParamProDeb[DOL_EPASSERELLE_FTPFILEMASK]',$conf->global->DOL_EPASSERELLE_FTPFILEMASK,30,255); ?></td>				
+		</tr>
+		
+		<tr>
+			<td><?php echo $langs->trans('EpasserelleFTPFileformat') ?></td><td><?php echo $form->texte('','TParamProDeb[DOL_EPASSERELLE_FTPFILEFORMAT]',$conf->global->DOL_EPASSERELLE_FTPFILEFORMAT,30,255); ?></td>				
+		</tr>
+		
+		
+	</table>
+	<p align="right">
+		
+		<input type="submit" name="bt_save" value="<?php echo $langs->trans('Save') ?>" /> 
+		
+	</p>
+	
+	</form>
+	
+	
+	<br /><br />
+	<?php
+}
+?>
 
-// Example with a yes / no select
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("ParamLabel").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_CONSTNAME">';
-print $form->selectyesno("CONSTNAME",$conf->global->CONSTNAME,1);
-print '<input type="submit" class="button" value="'.$langs->trans("Modify").'">';
-print '</form>';
-print '</td></tr>';
-
-print '</table>';
+<table width="100%" class="noborder">
+	<tr class="liste_titre">
+		<td>A propos</td>
+		<td align="center">&nbsp;</td>
+		</tr>
+		<tr class="impair">
+			<td valign="top">Module développé par </td>
+			<td align="center">
+				<a href="http://www.atm-consulting.fr/" target="_blank">ATM Consulting</a>
+			</td>
+		</td>
+	</tr>
+</table>
+<?php
 
 llxFooter();
 

@@ -76,23 +76,19 @@ function showParameters(&$form) {
 		</tr>
 		
 		<tr>
-			<td><?php echo $langs->trans('EpasserelleProductFilename') ?></td><td><?php echo $form->texte('','TParamProDeb[DOL_EPASSERELLE_PRODUCT_FILENAME]',$conf->global->DOL_EPASSERELLE_PRODUCT_FILENAME,30,255); ?></td>				
+			<td><?php echo $langs->trans('EXPORT_PRO_DEB_TYPE_ACTEUR') ?></td><td><?php echo $form->combo('','TParamProDeb[EXPORT_PRO_DEB_TYPE_ACTEUR]', array(''=>'', 'PSI'=>'Déclarant pour son compte', 'TDP'=>'Tiers déclarant'), $conf->global->EXPORT_PRO_DEB_TYPE_ACTEUR); ?></td>				
 		</tr>
 		
 		<tr>
-			<td><?php echo $langs->trans('EpasserelleStockFilename') ?></td><td><?php echo $form->texte('','TParamProDeb[DOL_EPASSERELLE_STOCK_FILENAME]',$conf->global->DOL_EPASSERELLE_STOCK_FILENAME,30,255); ?></td>				
+			<td><?php echo $langs->trans('EXPORT_PRO_DEB_ROLE_ACTEUR') ?></td><td><?php echo $form->combo('','TParamProDeb[EXPORT_PRO_DEB_ROLE_ACTEUR]', array(''=>'', 'sender'=>'Emetteur', 'PSI'=>'Déclarant'), $conf->global->EXPORT_PRO_DEB_ROLE_ACTEUR); ?></td>				
 		</tr>
 		
 		<tr>
-			<td><?php echo $langs->trans('EpasserelleCommandeFilename') ?></td><td><?php echo $form->texte('','TParamProDeb[DOL_EPASSERELLE_COMMANDE_FILENAME]',$conf->global->DOL_EPASSERELLE_COMMANDE_FILENAME,30,255); ?></td>				
+			<td><?php echo $langs->trans('EXPORT_PRO_DEB_NIV_OBLIGATION_INTRODUCTION') ?></td><td><?php echo $form->combo('','TParamProDeb[EXPORT_PRO_DEB_NIV_OBLIGATION_INTRODUCTION]', array(0=>'', 1=>'Seuil de 460 000 €', 2=>'En dessous de 460 000 €'), $conf->global->EXPORT_PRO_DEB_NIV_OBLIGATION_INTRODUCTION); ?></td>
 		</tr>
 		
 		<tr>
-			<td><?php echo $langs->trans('EpasserelleFTPFilemask') ?></td><td><?php echo $form->texte('','TParamProDeb[DOL_EPASSERELLE_FTPFILEMASK]',$conf->global->DOL_EPASSERELLE_FTPFILEMASK,30,255); ?></td>				
-		</tr>
-		
-		<tr>
-			<td><?php echo $langs->trans('EpasserelleFTPFileformat') ?></td><td><?php echo $form->texte('','TParamProDeb[DOL_EPASSERELLE_FTPFILEFORMAT]',$conf->global->DOL_EPASSERELLE_FTPFILEFORMAT,30,255); ?></td>				
+			<td><?php echo $langs->trans('EXPORT_PRO_DEB_NIV_OBLIGATION_EXPEDITION') ?></td><td><?php echo $form->combo('','TParamProDeb[EXPORT_PRO_DEB_NIV_OBLIGATION_EXPEDITION]', array(0=>'', 3=>'Seuil de 460 000 €', 4=>'En dessous de 460 000 €'), $conf->global->EXPORT_PRO_DEB_NIV_OBLIGATION_EXPEDITION); ?></td>
 		</tr>
 		
 		

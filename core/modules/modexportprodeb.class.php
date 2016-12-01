@@ -246,15 +246,35 @@ class modexportprodeb extends DolibarrModules
 	 */
 	function init($options='')
 	{
+		global $db;
+		
 		$sql = array();
 		
 		define('INC_FROM_DOLIBARR',true);
 
 		dol_include_once('/exportprodeb/config.php');
 		dol_include_once('/exportprodeb/script/create-maj-base.php');
+		require_once DOL_DOCUMENT_ROOT . '/core/class/extrafields.class.php';
 
 		$result=$this->_load_tables('/exportprodeb/sql/');
-
+		
+		$TModesTransport = array(
+							'options'=>array(
+								1=>'Transport maritime (y compris camions ou wagons sur bateau)'
+								,2=>'Transport par chemin de fer (y compris camions sur wagon)'
+								,3=>'Transport par route'
+								,4=>'Transport par air'
+								,5=>'Envois postaux'
+								,7=>'Installations de transport fixe (oléoduc)'
+								,8=>'Transport par navigation intérieure'
+								,9=>'Propulsion propre'
+								)
+							);
+		
+		$e = new ExtraFields($db);
+		$e->addExtraField('mode_transport', 'Mode de transport', 'select', '', '', 'facture', 0, 0, '', $TModesTransport);
+		$e->addExtraField('mode_transport', 'Mode de transport', 'select', '', '', 'facture_fourn', 0, 0, '', $TModesTransport);
+		
 		return $this->_init($sql, $options);
 	}
 

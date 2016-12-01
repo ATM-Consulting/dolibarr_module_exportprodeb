@@ -9,4 +9,4 @@ EXPORT_PRO_DEB_NUM_AGREMENT=Numéro d'agrément (délivré par le CISD de rattac
 EXPORT_PRO_DEB_TYPE_ACTEUR=Type d'acteur
 EXPORT_PRO_DEB_ROLE_ACTEUR=Rôle joué par l'acteur
 EXPORT_PRO_DEB_NIV_OBLIGATION_INTRODUCTION=Niveau d'oligation sur les introductions
-EXPORT_PRO_DEB_NIV_OBLIGATION_EXPEDITION=Niveau d'oligation sur les expéditions
+EXPORT_PRO_DEB_NIV_OBLIGATION_EXPEDITION=Niveau d'obligation sur les expéditions

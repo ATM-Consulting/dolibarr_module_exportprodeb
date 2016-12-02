@@ -31,7 +31,7 @@ class TDebProdouane extends TObjetStd {
 		/********************************************************************/
 		
 		/**************Construction du fichier XML***************************/
-		$e = new SimpleXMLElement('<?xml version="1.0" encoding="utf-8"?><INSTAT></INSTAT>');
+		$e = new SimpleXMLElement('<?xml version="1.0" encoding="utf-8" standalone="yes"?><INSTAT></INSTAT>');
 		
 		$enveloppe = $e->addChild('Envelope');
 		$enveloppe->addChild('envelopeId', $conf->global->EXPORT_PRO_DEB_NUM_AGREMENT);
@@ -69,25 +69,12 @@ class TDebProdouane extends TObjetStd {
 		
 		global $db, $mysoc;
 		
-		if($type=='expedition') $sql = 'SELECT f.facnumber, f.total as total_ht';
-		else $sql = 'SELECT f.ref_supplier as facnumber, f.total_ht';
-		$sql.= ', l.fk_product, l.qty
-				, p.weight
-				, s.rowid as id_client, s.nom, s.fk_pays, s.tva_intra
-				, c.code
-				FROM '.MAIN_DB_PREFIX.'facturedet l
-				INNER JOIN '.MAIN_DB_PREFIX.'facture f ON (f.rowid = l.fk_facture)
-				INNER JOIN '.MAIN_DB_PREFIX.'product p ON (p.rowid = l.fk_product)
-				INNER JOIN '.MAIN_DB_PREFIX.'societe s ON (s.rowid = f.fk_soc)
-				LEFT JOIN '.MAIN_DB_PREFIX.'c_country c ON (c.rowid = s.fk_pays)
-				WHERE (s.fk_pays <> '.$mysoc->country_id.' OR s.fk_pays IS NULL)';
-		
-		if($test) $sql.= ' AND f.datef >= "'.date('Y-m-d').'"'; // TODO période
+		$sql = $this->getFactLines($type, $test);
 		
 		$resql = $db->query($sql);
 		
 		if($resql) {
-			$i=0;
+			$i=1;
 			
 			if(empty($resql->num_rows)) {
 				$this->errors[] = 'Aucune donnée pour cette période';
@@ -101,12 +88,19 @@ class TDebProdouane extends TObjetStd {
 					// On n'arrête pas la boucle car on veut savoir quels sont tous les tiers qui n'ont pas de pays renseigné
 				} else {
 					$item = $declaration->addChild('Item');
+					$item->addChild('ItemNumber', $i);
 					if(!empty($res->tva_intra)) $item->addChild('partnerId', $res->tva_intra);
 					$item->addChild('MSConsDestCode', $res->code); // code iso pays client
 					$item->addChild('netMass', $res->weight * $res->qty); // Poids du produit
 					$item->addChild('netquantityInSU', $res->qty); // Quantité de produit dans la ligne
 					$item->addChild('invoicedAmount', round($res->total_ht)); // Montant total ht de la facture (entier attendu)
 					$item->addChild('invoicedNumber', $res->facnumber); // Numéro facture
+					$item->addChild('statisticalProcedureCode', '11');
+					$nature_of_transaction = $item->addChild('NatureOfTransaction');
+					$nature_of_transaction->addChild('natureOfTransactionACode', 1);
+					$nature_of_transaction->addChild('natureOfTransactionBCode', 1);
+					$item->addChild('modeOfTransportCode', $res->mode_transport);
+					$item->addChild('regionCode', substr($res->zip, 0, 2));
 				}
 				$i++;
 			}
@@ -116,6 +110,44 @@ class TDebProdouane extends TObjetStd {
 		}
 		
 		return 1;
+		
+	}
+
+	function getFactLines($type, $test) {
+		
+		global $mysoc;
+		
+		if($type=='expedition') {
+			$sql = 'SELECT f.facnumber, f.total as total_ht';
+			$table = 'facture';
+			$table_extraf = 'facture_extrafields';
+			$tabledet = 'facturedet';
+			$field_link = 'fk_facture';
+		}
+		else { // Introduction
+			$sql = 'SELECT f.ref_supplier as facnumber, f.total_ht';
+			$table = 'facture_fourn';
+			$table_extraf = 'facture_fourn_extrafields';
+			$tabledet = 'facture_fourn_det';
+			$field_link = 'fk_facture_fourn';
+		}
+		$sql.= ', l.fk_product, l.qty
+				, p.weight
+				, s.rowid as id_client, s.nom, s.zip, s.fk_pays, s.tva_intra
+				, c.code
+				, ext.mode_transport
+				FROM '.MAIN_DB_PREFIX.$tabledet.' l
+				INNER JOIN '.MAIN_DB_PREFIX.$table.' f ON (f.rowid = l.'.$field_link.')
+				LEFT JOIN '.MAIN_DB_PREFIX.$table_extraf.' ext ON (ext.fk_object = f.rowid)
+				INNER JOIN '.MAIN_DB_PREFIX.'product p ON (p.rowid = l.fk_product)
+				INNER JOIN '.MAIN_DB_PREFIX.'societe s ON (s.rowid = f.fk_soc)
+				LEFT JOIN '.MAIN_DB_PREFIX.'c_country c ON (c.rowid = s.fk_pays)
+				WHERE f.fk_statut > 0
+				AND (s.fk_pays <> '.$mysoc->country_id.' OR s.fk_pays IS NULL)';
+		
+		if($test) $sql.= ' AND f.datef >= "'.date('Y-m-d').'"'; // TODO période
+		
+		return $sql;
 		
 	}
 	

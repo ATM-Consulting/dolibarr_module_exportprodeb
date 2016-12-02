@@ -5,6 +5,7 @@ class TDebProdouane extends TObjetStd {
 	function __construct(&$ATMdb) {
 		
 		$this->ATMdb = $ATMdb;
+		$this->errors = array();
 		parent::set_table(MAIN_DB_PREFIX.'deb_prodouane');
 		parent::add_champs('numero_declaration,entity','type=entier;');
 		parent::add_champs('periode','type=chaine;');
@@ -54,15 +55,58 @@ class TDebProdouane extends TObjetStd {
 		$declaration->addChild('currencyCode', $conf->global->MAIN_MONNAIE);
 		/********************************************************************/
 		
-		self::getItems($declaration);
+		self::getItems($declaration, $type);
 		
 		pre($e->asXML(), true);
 		
 	}
 	
-	private function getItems(&$declaration) {
+	private function getItems(&$declaration, $type) {
+		
+		if($type == 'expedition') return $this->addItemsFactClient($declaration, true);
+		else return $this->addItemsFactFourn();
+		
+	}
+	
+	function addItemsFactFourn() {
+		
+		global $db;
 		
 		
+	}
+	
+	function addItemsFactClient(&$declaration, $test=false) {
+		
+		global $db, $mysoc;
+		
+		$sql = 'SELECT l.fk_product, l.qty, p.weight, f.total, s.rowid as id_client, s.nom, s.fk_pays, s.tva_intra
+				FROM '.MAIN_DB_PREFIX.'facturedet l
+				INNER JOIN '.MAIN_DB_PREFIX.'facture f ON (f.rowid = l.fk_facture)
+				INNER JOIN '.MAIN_DB_PREFIX.'product p ON (p.rowid = l.fk_product)
+				INNER JOIN '.MAIN_DB_PREFIX.'societe s ON (s.rowid = f.fk_soc)
+				WHERE s.fk_pays <> '.$mysoc->country_id;
+		
+		if($test) $sql.= ' AND f.datef >= "'.date('Y-m-d').'"'; // TODO prédiode
+		
+		$resql = $db->query($sql);
+		
+		if($resql) {
+			$i=0;
+			while($res = $db->fetch_object($resql)) {
+				if(empty($res->fk_pays)) {
+					//TODO langs
+					$this->errors[] = 'Pays non renseigné pour le tiers <a href="'.dol_buildpath('/societe/soc.php',1).'?socid='.$res->id_client.'">'.$res->nom.'</a>';
+					return 0;
+				}
+				$item = $declaration->addChild('Item');
+				$TData['MSConsDestCode'] = ''; // code iso pays client
+				$TData['netMass'] = ''; // Poids du produit
+				$TData['quantityInSU'] = $res->qty; // Quantité de produit dans la ligne
+				$TData['invoicedAmount'] = $res->total; // Montant total ht de la facture (entier attendu)
+				$i++;
+			}
+			if(!empty($this->errors)) $this->errors = array_unique($this->errors);
+		}
 		
 	}
 	

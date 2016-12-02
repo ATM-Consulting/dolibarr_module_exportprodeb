@@ -5,8 +5,13 @@ ATMAbout = Ce module a été développé par <a href="http://www.atm-consulting.
 
 exportprodebSetup = Configuration du module exportprodeb
 exportprodebAbout = A propos du module exportprodeb
+
+#Conf
 EXPORT_PRO_DEB_NUM_AGREMENT=Numéro d'agrément (délivré par le CISD de rattachement)
 EXPORT_PRO_DEB_TYPE_ACTEUR=Type d'acteur
 EXPORT_PRO_DEB_ROLE_ACTEUR=Rôle joué par l'acteur
 EXPORT_PRO_DEB_NIV_OBLIGATION_INTRODUCTION=Niveau d'oligation sur les introductions
 EXPORT_PRO_DEB_NIV_OBLIGATION_EXPEDITION=Niveau d'obligation sur les expéditions
+
+#page d'export
+exportprodebTitle=Export d'un fichier XML au format ProDouane

@@ -57,7 +57,10 @@ class TDebProdouane extends TObjetStd {
 		$declaration->addChild('currencyCode', $conf->global->MAIN_MONNAIE);
 		/********************************************************************/
 		
+		/**************Ajout des lignes de factures**************************/
 		$res = self::addItemsFact($declaration, $type, true);
+		/********************************************************************/
+		
 		$this->errors = array_unique($this->errors);
 
 		if(!empty($res)) return $e->asXML();
@@ -67,9 +70,9 @@ class TDebProdouane extends TObjetStd {
 	
 	function addItemsFact(&$declaration, $type, $test=false) {
 		
-		global $db, $mysoc;
+		global $db;
 		
-		$sql = $this->getFactLines($type, $test);
+		$sql = $this->getSQLFactLines($type, $test);
 		
 		$resql = $db->query($sql);
 		
@@ -113,7 +116,7 @@ class TDebProdouane extends TObjetStd {
 		
 	}
 
-	function getFactLines($type, $test) {
+	function getSQLFactLines($type, $test) {
 		
 		global $mysoc;
 		

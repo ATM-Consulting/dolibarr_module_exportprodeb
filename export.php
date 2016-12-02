@@ -8,13 +8,13 @@ $ATMdb = new TPDOdb;
 $ATMform = new TFormCore;
 $formother = new FormOther($db);
 
-$obj = new TDebProdouane($ATMdb);
-//$res = $obj->getXML('O', 'expedition');
-$res = $obj->getXML('O', 'introduction');
-
 switch($action) {
 	
+	case 'export':
+		export_xml(GETPOST('type'));
+		break;
 	default:
+		
 	case 'view':
 		print_form();
 		break;
@@ -33,6 +33,7 @@ function print_form() {
 	global $langs, $ATMform, $formother;
 	
 	$langs->load('exportprodeb@exportprodeb');
+	$langs->load('main');
 	
 	llxHeader();
 	print_fiche_titre($langs->trans('exportprodebTitle'));
@@ -52,7 +53,9 @@ function print_form() {
 	print 'Période d\'analyse';
 	print '</td>';
 	print '<td>';
-	print '<input class="flat" type="text" size="1" maxlength="2" name="month" value="'.date('m').'">';
+	$TabMonth = array();
+	for($i=1;$i<=12;$i++) $TabMonth[$i] = $langs->trans('Month'.str_pad($i, 2, 0, STR_PAD_LEFT));
+	print $ATMform->combo('','month', $TabMonth, date('m'));
 	print $formother->selectyear(date('Y'),'year',0, 20, 5);
 	print '</td>';
 	print '</tr>';
@@ -61,7 +64,7 @@ function print_form() {
 	print 'Type de données';
 	print '</td>';
 	print '<td>';
-	print $ATMform->combo('','type', array(''=>'', 'introduction'=>'Introduction', 'expedition'=>'Expédition'), $conf->global->EXPORT_PRO_DEB_TYPE_ACTEUR);
+	print $ATMform->combo('','type', array('introduction'=>'Introduction', 'expedition'=>'Expédition'), $conf->global->EXPORT_PRO_DEB_TYPE_ACTEUR);
 	print '</td>';
 	print '</tr>';
 	
@@ -72,6 +75,15 @@ function print_form() {
 	print '</div>';
 	
 	print '</form>';
+	
+}
+
+function export_xml($type) {
+	
+	global $ATMdb;
+	$obj = new TDebProdouane($ATMdb);
+	//$res = $obj->getXML('O', 'expedition');
+	$res = $obj->getXML('O', $type);
 	
 }
 

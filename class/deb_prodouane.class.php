@@ -154,10 +154,4 @@ class TDebProdouane extends TObjetStd {
 		
 	}
 	
-	function getLastIdDeclaration() {
-		
-		
-		
-	}
-	
 }

@@ -8,7 +8,7 @@ class TDebProdouane extends TObjetStd {
 		$this->errors = array();
 		parent::set_table(MAIN_DB_PREFIX.'deb_prodouane');
 		parent::add_champs('numero_declaration,entity','type=entier;');
-		parent::add_champs('periode','type=chaine;');
+		parent::add_champs('type_declaration,periode,mode','type=chaine;');
 		parent::add_champs('content_xml','type=text;');
 		parent::start();
 		parent::_init_vars();
@@ -17,7 +17,7 @@ class TDebProdouane extends TObjetStd {
 	
 	
 	/**
-	 * @param $mode O pour création, R pour régénération
+	 * @param $mode O pour création, R pour régénération (apparemment toujours 0 dans la cadre des échanges XML selon la doc)
 	 * @param $type introduction ou expedition
 	 */
 	function getXML($mode='O', $type='introduction', $periode_reference='') {
@@ -27,7 +27,7 @@ class TDebProdouane extends TObjetStd {
 		/**************Construction de quelques variables********************/
 		$party_id = substr(strtr($mysoc->tva_intra, array(' '=>'')), 0, 4).$mysoc->idprof2;
 		$declarant = substr($mysoc->managers, 0, 14);
-		$id_declaration = self::getLastIdDeclaration();
+		$id_declaration = str_pad($this->numero_declaration, 6, 0, STR_PAD_LEFT);
 		/********************************************************************/
 		
 		/**************Construction du fichier XML***************************/
@@ -58,7 +58,7 @@ class TDebProdouane extends TObjetStd {
 		/********************************************************************/
 		
 		/**************Ajout des lignes de factures**************************/
-		$res = self::addItemsFact($declaration, $type, true);
+		$res = self::addItemsFact($declaration, $type, $periode_reference);
 		/********************************************************************/
 		
 		$this->errors = array_unique($this->errors);
@@ -68,11 +68,11 @@ class TDebProdouane extends TObjetStd {
 		
 	}
 	
-	function addItemsFact(&$declaration, $type, $test=false) {
+	function addItemsFact(&$declaration, $type, $periode_reference) {
 		
 		global $db;
 		
-		$sql = $this->getSQLFactLines($type, $test);
+		$sql = $this->getSQLFactLines($type, $periode_reference);
 		
 		$resql = $db->query($sql);
 		
@@ -116,7 +116,7 @@ class TDebProdouane extends TObjetStd {
 		
 	}
 
-	function getSQLFactLines($type, $test) {
+	function getSQLFactLines($type, $periode_reference) {
 		
 		global $mysoc;
 		
@@ -146,11 +146,40 @@ class TDebProdouane extends TObjetStd {
 				INNER JOIN '.MAIN_DB_PREFIX.'societe s ON (s.rowid = f.fk_soc)
 				LEFT JOIN '.MAIN_DB_PREFIX.'c_country c ON (c.rowid = s.fk_pays)
 				WHERE f.fk_statut > 0
-				AND (s.fk_pays <> '.$mysoc->country_id.' OR s.fk_pays IS NULL)';
-		
-		if($test) $sql.= ' AND f.datef >= "'.date('Y-m-d').'"'; // TODO période
+				AND (s.fk_pays <> '.$mysoc->country_id.' OR s.fk_pays IS NULL)
+				AND f.datef BETWEEN "'.$periode_reference.'-01" AND "'.$periode_reference.'-'.date('t').'"';
 		
 		return $sql;
+		
+	}
+
+	function getNextNumeroDeclaration() {
+		
+		global $db;
+		$resql = $db->query('SELECT MAX(numero_declaration) as max_numero_declaration FROM '.$this->get_table());
+		if($resql) $res = $db->fetch_object($resql);
+		
+		return ($res->max_numero_declaration + 1);
+		
+	}
+
+	function generateXMLFile() {
+		
+		$name = $this->periode.'.xml';
+		$fname = sys_get_temp_dir().'/'.$name;
+		$f = fopen($fname, 'w+');
+		fwrite($f, $this->content_xml);
+		fclose($f);
+		
+		header('Content-Description: File Transfer');
+	    header('Content-Type: application/xml');
+	    header('Content-Disposition: attachment; filename="'.$name.'"');
+	    header('Expires: 0');
+	    header('Cache-Control: must-revalidate');
+	    header('Pragma: public');
+	    header('Content-Length: ' . filesize($fname));
+	    readfile($fname);
+		exit;
 		
 	}
 	

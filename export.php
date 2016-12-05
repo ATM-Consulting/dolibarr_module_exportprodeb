@@ -4,33 +4,30 @@ require './config.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.formother.class.php';
 dol_include_once('/exportprodeb/class/deb_prodouane.class.php');
 
+$action = GETPOST('action');
+
 $ATMdb = new TPDOdb;
 $ATMform = new TFormCore;
 $formother = new FormOther($db);
+$year = GETPOST('year');
+$month = GETPOST('month');
+$type_declaration = GETPOST('type');
 
 switch($action) {
 	
 	case 'export':
-		export_xml(GETPOST('type'));
-		break;
+		export_xml($type_declaration, $year, $month);
 	default:
-		
-	case 'view':
 		print_form();
 		break;
-	
+
 }
-
-//if(!empty($obj->errors)) setEventMessage(implode('<br />', $obj->errors));
-
-/*$f = fopen('/var/www/test.xml', 'w+');
-fwrite($f,$res );*/
 
 
 
 function print_form() {
 	
-	global $langs, $ATMform, $formother;
+	global $langs, $ATMform, $formother, $year, $month, $type_declaration;
 	
 	$langs->load('exportprodeb@exportprodeb');
 	$langs->load('main');
@@ -55,16 +52,16 @@ function print_form() {
 	print '<td>';
 	$TabMonth = array();
 	for($i=1;$i<=12;$i++) $TabMonth[$i] = $langs->trans('Month'.str_pad($i, 2, 0, STR_PAD_LEFT));
-	print $ATMform->combo('','month', $TabMonth, date('m'));
-	print $formother->selectyear(date('Y'),'year',0, 20, 5);
+	print $ATMform->combo('','month', $TabMonth, empty($month) ? date('m') : $month);
+	print $formother->selectyear(empty($year) ? date('Y') : $year,'year',0, 20, 5);
 	print '</td>';
 	print '</tr>';
 	print '<tr>';
 	print '<td>';
-	print 'Type de données';
+	print 'Type de déclaration';
 	print '</td>';
 	print '<td>';
-	print $ATMform->combo('','type', array('introduction'=>'Introduction', 'expedition'=>'Expédition'), $conf->global->EXPORT_PRO_DEB_TYPE_ACTEUR);
+	print $ATMform->combo('','type', array('introduction'=>'Introduction', 'expedition'=>'Expédition'), $type_declaration);
 	print '</td>';
 	print '</tr>';
 	
@@ -78,12 +75,22 @@ function print_form() {
 	
 }
 
-function export_xml($type) {
+function export_xml($type_declaration, $period_year, $period_month) {
 	
-	global $ATMdb;
+	global $ATMdb, $conf;
+	
 	$obj = new TDebProdouane($ATMdb);
-	//$res = $obj->getXML('O', 'expedition');
-	$res = $obj->getXML('O', $type);
+	$obj->entity = $conf->entity;
+	$obj->mode = 'O';
+	$obj->periode = $period_year.'-'.$period_month;
+	$obj->type_declaration = $type_declaration;
+	$obj->numero_declaration = $obj->getNextNumeroDeclaration();
+	$obj->content_xml = $obj->getXML('O', $type, $period_year.'-'.$period_month);
+	if(empty($obj->errors)) {
+		$obj->save($ATMdb);
+		$obj->generateXMLFile();
+	}
+	else setEventMessage($obj->errors, 'warnings');
 	
 }
 

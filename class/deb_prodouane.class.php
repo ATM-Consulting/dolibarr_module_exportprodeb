@@ -199,7 +199,7 @@ class TDebProdouane extends TObjetStd {
 			$table = 'facture_fourn';
 			$tabledet = 'facture_fourn_det';
 			$field_link = 'fk_facture_fourn';
-			$more_sql = 'f.ref_supplier as facnumber';
+			$more_sql = 'f.ref_supplier';
 		}
 		
 		foreach($TLinesFraisDePort as $res) {

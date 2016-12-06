@@ -124,7 +124,7 @@ class TDebProdouane extends TObjetStd {
 
 	function getSQLFactLines($type, $periode_reference) {
 		
-		global $mysoc;
+		global $mysoc, $conf;
 		
 		if($type=='expedition') {
 			$sql = 'SELECT f.facnumber, f.total as total_ht';
@@ -152,6 +152,7 @@ class TDebProdouane extends TObjetStd {
 				INNER JOIN '.MAIN_DB_PREFIX.'societe s ON (s.rowid = f.fk_soc)
 				LEFT JOIN '.MAIN_DB_PREFIX.'c_country c ON (c.rowid = s.fk_pays)
 				WHERE f.fk_statut > 0
+				AND f.entity = '.$conf->entity.'
 				AND (s.fk_pays <> '.$mysoc->country_id.' OR s.fk_pays IS NULL)
 				AND f.datef BETWEEN "'.$periode_reference.'-01" AND "'.$periode_reference.'-'.date('t').'"';
 		
@@ -187,7 +188,7 @@ class TDebProdouane extends TObjetStd {
 	 */
 	function addItemFraisDePort(&$declaration, &$TLinesFraisDePort, $type, &$categ_fraisdeport) {
 		
-		global $db;
+		global $db, $conf;
 		
 		if($type=='expedition') {
 			$table = 'facture';
@@ -209,6 +210,7 @@ class TDebProdouane extends TObjetStd {
 					INNER JOIN '.MAIN_DB_PREFIX.$table.' f ON (f.rowid = d.'.$field_link.')
 					INNER JOIN '.MAIN_DB_PREFIX.'product p ON (p.rowid = d.fk_product)
 					WHERE d.fk_product IS NOT NULL
+					AND f.entity = '.$conf->entity.'
 					AND '.$more_sql.' = "'.$res->facnumber.'"
 					AND d.total_ht =
 					(

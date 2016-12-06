@@ -184,7 +184,62 @@ class modexportprodeb extends DolibarrModules
 		// Main menu entries
 		$this->menu = array();			// List of menus to add
 		$r=0;
-
+		
+		$langs->load('exportprodeb@exportprodeb');
+		
+		$this->menu[$r]=array('fk_menu'=>0,			// Put 0 if this is a top menu
+				'type'=>'top',			// This is a Top menu entry
+				'titre'=>$langs->trans('Module104994Name'),
+				'mainmenu'=>'exportprodeb',
+				'leftmenu'=>'',		// Use 1 if you also want to add left menu entries using this descriptor. Use 0 if left menu entries are defined in a file pre.inc.php (old school).
+				'url'=>'/exportprodeb/export.php',
+				'langs'=>'exportprodeb@exportprodeb',
+				'position'=>100,
+				'enabled'=>'$conf->exportprodeb->enabled',			// Define condition to show or hide menu entry. Use '$conf->mymodule->enabled' if entry must be visible if module is enabled.
+				'perms'=>1,			// Use 'perms'=>'$user->rights->mymodule->level1->level2' if you want your menu with a permission rules
+				'target'=>'',
+				'user'=>2);				// 0=Menu for internal users, 1=external users, 2=both
+		$r++;
+		
+		$this->menu[$r]=array('fk_menu'=>'fk_mainmenu=exportprodeb',			// Put 0 if this is a top menu
+					'type'=>'left',			// This is a Top menu entry
+					'titre'=>$langs->trans('Module104994Name'),
+					'mainmenu'=>'exportprodeb',
+					'leftmenu'=>'exportprodeb',
+					'url'=>'/exportprodeb/export.php',
+					'position'=>100+$r,
+					'enabled'=>'$conf->exportprodeb->enabled',			// Define condition to show or hide menu entry. Use '$conf->mymodule->enabled' if entry must be visible if module is enabled.
+					'perms'=>1,			// Use 'perms'=>'$user->rights->mymodule->level1->level2' if you want your menu with a permission rules
+					'target'=>'',
+					'user'=>2);				// 0=Menu for internal users, 1=external users, 2=both
+		$r++;
+	   
+        $this->menu[$r]=array('fk_menu'=>'fk_mainmenu=exportprodeb,fk_leftmenu=exportprodeb',         // Put 0 if this is a top menu
+                    'type'=>'left',         // This is a Top menu entry
+                    'titre'=>$langs->trans('exportprodebNew'),
+                    'mainmenu'=>'exportprodeb',
+                    'leftmenu'=>'exportprodebNew',
+                 	'url'=>'/exportprodeb/export.php',
+                    'position'=>100+$r,
+                    'enabled'=>'$conf->exportprodeb->enabled',           // Define condition to show or hide menu entry. Use '$conf->mymodule->enabled' if entry must be visible if module is enabled.
+                    'perms'=>1,          // Use 'perms'=>'$user->rights->mymodule->level1->level2' if you want your menu with a permission rules
+                    'target'=>'',
+                    'user'=>2);             // 0=Menu for internal users, 1=external users, 2=both
+        $r++;
+        
+        $this->menu[$r]=array('fk_menu'=>'fk_mainmenu=exportprodeb,fk_leftmenu=exportprodeb',         // Put 0 if this is a top menu
+                    'type'=>'left',         // This is a Top menu entry
+                    'titre'=>$langs->trans('exportprodebList'),
+                    'mainmenu'=>'exportprodeb',
+                    'leftmenu'=>'exportprodebList',
+                    'url'=>'/exportprodeb/export.php?action=list',
+                    'position'=>100+$r,
+                    'enabled'=>'$conf->exportprodeb->enabled',            // Define condition to show or hide menu entry. Use '$conf->mymodule->enabled' if entry must be visible if module is enabled.
+                    'perms'=>1,          // Use 'perms'=>'$user->rights->mymodule->level1->level2' if you want your menu with a permission rules
+                    'target'=>'',
+                    'user'=>2);             // 0=Menu for internal users, 1=external users, 2=both
+        $r++;
+		
 		// Add here entries to declare new menus
 		//
 		// Example to declare a new Top Menu entry and its Left menu entry:

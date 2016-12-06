@@ -27,7 +27,7 @@ class TDebProdouane extends TObjetStd {
 		/**************Construction de quelques variables********************/
 		$party_id = substr(strtr($mysoc->tva_intra, array(' '=>'')), 0, 4).$mysoc->idprof2;
 		$declarant = substr($mysoc->managers, 0, 14);
-		$id_declaration = str_pad($this->numero_declaration, 6, 0, STR_PAD_LEFT);
+		$id_declaration = self::getNumeroDeclaration($this->numero_declaration);
 		/********************************************************************/
 		
 		/**************Construction du fichier XML***************************/
@@ -160,6 +160,12 @@ class TDebProdouane extends TObjetStd {
 		if($resql) $res = $db->fetch_object($resql);
 		
 		return ($res->max_numero_declaration + 1);
+		
+	}
+
+	static function getNumeroDeclaration($numero) {
+	
+		return str_pad($numero, 6, 0, STR_PAD_LEFT);
 		
 	}
 

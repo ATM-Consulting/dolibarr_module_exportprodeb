@@ -15,17 +15,25 @@ $type_declaration = GETPOST('type');
 
 switch($action) {
 	
+	case 'generateXML':
+		$obj = new TDebProdouane($ATMdb);
+		$obj->load($ATMdb, GETPOST('id_declaration'));
+		$obj->generateXMLFile();
+		break;
+	case 'list':
+		_liste();
+		break;
 	case 'export':
-		export_xml($type_declaration, $year, $month);
+		_export_xml($type_declaration, $year, $month);
 	default:
-		print_form();
+		_print_form();
 		break;
 
 }
 
 
 
-function print_form() {
+function _print_form() {
 	
 	global $langs, $ATMform, $formother, $year, $month, $type_declaration;
 	
@@ -75,7 +83,7 @@ function print_form() {
 	
 }
 
-function export_xml($type_declaration, $period_year, $period_month) {
+function _export_xml($type_declaration, $period_year, $period_month) {
 	
 	global $ATMdb, $conf;
 	
@@ -91,6 +99,49 @@ function export_xml($type_declaration, $period_year, $period_month) {
 		$obj->generateXMLFile();
 	}
 	else setEventMessage($obj->errors, 'warnings');
+	
+}
+
+function _liste() {
+	
+	global $db, $ATMdb, $langs;
+	
+	$langs->load('exportprodeb@exportprodeb');
+	
+	llxHeader();
+	$l = new TListviewTBS('tagada');
+	
+	$sql = 'SELECT numero_declaration, type_declaration, periode, rowid as dl
+			FROM '.MAIN_DB_PREFIX.'deb_prodouane
+			ORDER BY rowid';
+	
+	print $l->render($ATMdb, $sql, array(
+		'type'=>array(
+			//'date_cre'=>'date'
+		)
+		,'link'=>array(
+			'dl'=>'<a href="'.dol_buildpath('/exportprodeb/export.php', 1).'?action=generateXML&id_declaration=@dl@" >@dl@</a>'
+		)
+		,'eval'=>array(
+			'numero_declaration'=>'TDebProdouane::getNumeroDeclaration("@val@")'
+			,'fk_statut'=>'TReapproMultiEntrepot::$TStatus["@val@"]'
+		)
+		,'liste'=>array(
+			'titre'=>$langs->trans('exportprodebList')
+			,'image'=>img_picto('','title.png', '', 0)
+			,'picto_precedent'=>img_picto('','back.png', '', 0)
+			,'picto_suivant'=>img_picto('','next.png', '', 0)
+			,'noheader'=> (int)isset($_REQUEST['fk_soc']) | (int)isset($_REQUEST['fk_product'])
+			,'messageNothing'=>"Il n'y a aucun ".$langs->trans('Module104993Name')." à afficher"
+			,'picto_search'=>img_picto('','search.png', '', 0)
+		)
+		,'title'=>array(
+			'numero_declaration'=>$langs->trans('exportprodebNumber')
+			,'type_declaration'=>$langs->trans('exportprodebList')
+			,'periode'=>$langs->trans('exportprodebPeriod')
+			,'dl'=>$langs->trans('exportprodebDownload')
+		)
+	));
 	
 }
 

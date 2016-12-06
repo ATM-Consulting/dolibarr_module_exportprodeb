@@ -75,7 +75,9 @@ class TDebProdouane extends TObjetStd {
 	
 	function addItemsFact(&$declaration, $type, $periode_reference) {
 		
-		global $db;
+		global $db, $conf;
+		
+		require_once DOL_DOCUMENT_ROOT . '/categories/class/categorie.class.php';
 		
 		$sql = $this->getSQLFactLines($type, $periode_reference);
 		
@@ -89,30 +91,29 @@ class TDebProdouane extends TObjetStd {
 				return 0;
 			}
 			
-			while($res = $db->fetch_object($resql)) {
-				if(empty($res->fk_pays)) {
-					//TODO langs
-					$this->errors[] = 'Pays non renseigné pour le tiers <a href="'.dol_buildpath('/societe/soc.php',1).'?socid='.$res->id_client.'">'.$res->nom.'</a>';
-					// On n'arrête pas la boucle car on veut savoir quels sont tous les tiers qui n'ont pas de pays renseigné
-				} else {
-					$item = $declaration->addChild('Item');
-					$item->addChild('ItemNumber', $i);
-					if(!empty($res->tva_intra)) $item->addChild('partnerId', $res->tva_intra);
-					$item->addChild('MSConsDestCode', $res->code); // code iso pays client
-					$item->addChild('netMass', $res->weight * $res->qty); // Poids du produit
-					$item->addChild('netquantityInSU', $res->qty); // Quantité de produit dans la ligne
-					$item->addChild('invoicedAmount', round($res->total_ht)); // Montant total ht de la facture (entier attendu)
-					$item->addChild('invoicedNumber', $res->facnumber); // Numéro facture
-					$item->addChild('statisticalProcedureCode', '11');
-					$nature_of_transaction = $item->addChild('NatureOfTransaction');
-					$nature_of_transaction->addChild('natureOfTransactionACode', 1);
-					$nature_of_transaction->addChild('natureOfTransactionBCode', 1);
-					$item->addChild('modeOfTransportCode', $res->mode_transport);
-					$item->addChild('regionCode', substr($res->zip, 0, 2));
-				}
-				$i++;
+			if($conf->global->EXPORT_PRO_DEB_CATEG_FRAISDEPORT > 0) {
+				$categ_fraisdeport = new Categorie($db);
+				$categ_fraisdeport->fetch($conf->global->EXPORT_PRO_DEB_CATEG_FRAISDEPORT);
+				$TLinesFraisDePort = array();
 			}
 			
+			while($res = $db->fetch_object($resql)) {
+				
+				if(empty($res->fk_pays)) {
+					// On n'arrête pas la boucle car on veut savoir quels sont tous les tiers qui n'ont pas de pays renseigné
+					$this->errors[] = 'Pays non renseigné pour le tiers <a href="'.dol_buildpath('/societe/soc.php',1).'?socid='.$res->id_client.'">'.$res->nom.'</a>';
+				} else {
+					if($conf->global->EXPORT_PRO_DEB_CATEG_FRAISDEPORT > 0 && $categ_fraisdeport->containsObject('product', $res->id_prod)) {
+						$TLinesFraisDePort[] = $res;
+					} else $this->addItemXMl($declaration, $res);
+				}
+				
+				$i++;
+				
+			}
+			
+			if(!empty($TLinesFraisDePort)) $this->addItemFraisDePort($declaration, $TLinesFraisDePort, $type, $categ_fraisdeport);
+
 			if(count($this->errors) > 0) return 0;
 			
 		}
@@ -140,7 +141,7 @@ class TDebProdouane extends TObjetStd {
 			$field_link = 'fk_facture_fourn';
 		}
 		$sql.= ', l.fk_product, l.qty
-				, p.weight
+				, p.weight, p.rowid as id_prod, p.customcode
 				, s.rowid as id_client, s.nom, s.zip, s.fk_pays, s.tva_intra
 				, c.code
 				, ext.mode_transport
@@ -155,6 +156,81 @@ class TDebProdouane extends TObjetStd {
 				AND f.datef BETWEEN "'.$periode_reference.'-01" AND "'.$periode_reference.'-'.date('t').'"';
 		
 		return $sql;
+		
+	}
+	
+	function addItemXMl(&$declaration, &$res, $code_douane_spe='') {
+		
+		$item = $declaration->addChild('Item');
+		$item->addChild('ItemNumber', $i);
+		$cn8 = $item->addChild('CN8');
+		if(empty($code_douane_spe)) $code_douane = $res->customcode;
+		else $code_douane = $code_douane_spe;
+		$cn8->addChild('CN8Code', $code_douane);
+		if(!empty($res->tva_intra)) $item->addChild('partnerId', $res->tva_intra);
+		$item->addChild('MSConsDestCode', $res->code); // code iso pays client
+		$item->addChild('netMass', $res->weight * $res->qty); // Poids du produit
+		$item->addChild('quantityInSU', $res->qty); // Quantité de produit dans la ligne
+		$item->addChild('invoicedAmount', round($res->total_ht)); // Montant total ht de la facture (entier attendu)
+		$item->addChild('invoicedNumber', $res->facnumber); // Numéro facture
+		$item->addChild('statisticalProcedureCode', '11');
+		$nature_of_transaction = $item->addChild('NatureOfTransaction');
+		$nature_of_transaction->addChild('natureOfTransactionACode', 1);
+		$nature_of_transaction->addChild('natureOfTransactionBCode', 1);
+		$item->addChild('modeOfTransportCode', $res->mode_transport);
+		$item->addChild('regionCode', substr($res->zip, 0, 2));
+		
+	}
+
+	/**
+	 * Cette fonction ajoute un item en récupérant le code douane du produit ayant le plus haut montant dans la facture
+	 */
+	function addItemFraisDePort(&$declaration, &$TLinesFraisDePort, $type, &$categ_fraisdeport) {
+		
+		global $db;
+		
+		if($type=='expedition') {
+			$table = 'facture';
+			$tabledet = 'facturedet';
+			$field_link = 'fk_facture';
+			$more_sql = 'f.facnumber';
+		}
+		else { // Introduction
+			$table = 'facture_fourn';
+			$tabledet = 'facture_fourn_det';
+			$field_link = 'fk_facture_fourn';
+			$more_sql = 'f.ref_supplier as facnumber';
+		}
+		
+		foreach($TLinesFraisDePort as $res) {
+			
+			$sql = 'SELECT p.customcode
+					FROM '.MAIN_DB_PREFIX.$tabledet.' d
+					INNER JOIN '.MAIN_DB_PREFIX.$table.' f ON (f.rowid = d.'.$field_link.')
+					INNER JOIN '.MAIN_DB_PREFIX.'product p ON (p.rowid = d.fk_product)
+					WHERE d.fk_product IS NOT NULL
+					AND '.$more_sql.' = "'.$res->facnumber.'"
+					AND d.total_ht =
+					(
+						SELECT MAX(d.total_ht)
+						FROM '.MAIN_DB_PREFIX.$tabledet.' d
+						INNER JOIN '.MAIN_DB_PREFIX.$table.' f ON (f.rowid = d.'.$field_link.')
+						WHERE d.fk_product IS NOT NULL
+						AND '.$more_sql.' = "'.$res->facnumber.'"
+						AND d.fk_product NOT IN
+						(
+							SELECT fk_product
+							FROM '.MAIN_DB_PREFIX.'categorie_product
+							WHERE fk_categorie = '.$categ_fraisdeport->id.'
+						) 
+					)';
+			
+			$resql = $db->query($sql);
+			$ress = $db->fetch_object($resql);
+			
+			$this->addItemXMl($declaration, $res, $ress->customcode);
+			
+		}
 		
 	}
 

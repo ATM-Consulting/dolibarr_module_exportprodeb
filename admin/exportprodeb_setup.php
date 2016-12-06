@@ -27,6 +27,7 @@
 require '../config.php';
 require_once '../lib/exportprodeb.lib.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/admin.lib.php';
+require_once DOL_DOCUMENT_ROOT . '/core/class/html.formother.class.php';
 
 // Translations
 $langs->load("exportprodeb@exportprodeb");
@@ -63,6 +64,7 @@ function showParameters(&$form) {
 	$langs->load('exportprodeb@exportprodeb');
 	
 	$html=new Form($db);
+	$formother=new FormOther($db);
 	
 	?><form action="<?php echo $_SERVER['PHP_SELF'] ?>" name="save" method="POST">
 		<input type="hidden" name="action" value="save" />
@@ -89,6 +91,10 @@ function showParameters(&$form) {
 		
 		<tr>
 			<td><?php echo $langs->trans('EXPORT_PRO_DEB_NIV_OBLIGATION_EXPEDITION') ?></td><td><?php echo $form->combo('','TParamProDeb[EXPORT_PRO_DEB_NIV_OBLIGATION_EXPEDITION]', array(0=>'', 3=>'Seuil de 460 000 €', 4=>'En dessous de 460 000 €'), $conf->global->EXPORT_PRO_DEB_NIV_OBLIGATION_EXPEDITION); ?></td>
+		</tr>
+		
+		<tr>
+			<td><?php echo $langs->trans('EXPORT_PRO_DEB_CATEG_FRAISDEPORT') ?></td><td><?php echo $formother->select_categories(0, $conf->global->EXPORT_PRO_DEB_CATEG_FRAISDEPORT, 'TParamProDeb[EXPORT_PRO_DEB_CATEG_FRAISDEPORT]'); ?></td>
 		</tr>
 		
 		

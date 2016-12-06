@@ -94,7 +94,7 @@ function _export_xml($type_declaration, $period_year, $period_month) {
 	$obj->periode = $period_year.'-'.$period_month;
 	$obj->type_declaration = $type_declaration;
 	$obj->numero_declaration = $obj->getNextNumeroDeclaration();
-	$obj->content_xml = $obj->getXML('O', $type, $period_year.'-'.$period_month);
+	$obj->content_xml = $obj->getXML('O', $type_declaration, $period_year.'-'.$period_month);
 	if(empty($obj->errors)) {
 		$obj->save($ATMdb);
 		$obj->generateXMLFile();

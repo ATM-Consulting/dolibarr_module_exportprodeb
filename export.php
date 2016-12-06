@@ -105,7 +105,7 @@ function _export_xml($type_declaration, $period_year, $period_month) {
 
 function _liste() {
 	
-	global $db, $ATMdb, $langs;
+	global $db, $conf, $ATMdb, $langs;
 	
 	$langs->load('exportprodeb@exportprodeb');
 	
@@ -113,7 +113,8 @@ function _liste() {
 	$l = new TListviewTBS('exportprodeb');
 	
 	$sql = 'SELECT numero_declaration, type_declaration, periode, rowid as dl
-			FROM '.MAIN_DB_PREFIX.'deb_prodouane';
+			FROM '.MAIN_DB_PREFIX.'deb_prodouane
+			WHERE entity = '.$conf->entity;
 	
 	print $l->render($ATMdb, $sql, array(
 		'type'=>array(

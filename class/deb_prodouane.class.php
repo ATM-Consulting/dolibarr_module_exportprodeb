@@ -2,6 +2,11 @@
 
 class TDebProdouane extends TObjetStd {
 	
+	static $TType = array(
+							'introduction'=>'Introduction'
+							,'expedition'=>'Expédition'
+						);
+	
 	function __construct(&$ATMdb) {
 		
 		$this->ATMdb = $ATMdb;

@@ -2,6 +2,7 @@
 
 require './config.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.formother.class.php';
+require_once DOL_DOCUMENT_ROOT . '/core/lib/functions.lib.php';
 dol_include_once('/exportprodeb/class/deb_prodouane.class.php');
 
 $action = GETPOST('action');
@@ -109,30 +110,28 @@ function _liste() {
 	$langs->load('exportprodeb@exportprodeb');
 	
 	llxHeader();
-	$l = new TListviewTBS('tagada');
+	$l = new TListviewTBS('exportprodeb');
 	
 	$sql = 'SELECT numero_declaration, type_declaration, periode, rowid as dl
-			FROM '.MAIN_DB_PREFIX.'deb_prodouane
-			ORDER BY rowid';
+			FROM '.MAIN_DB_PREFIX.'deb_prodouane';
 	
 	print $l->render($ATMdb, $sql, array(
 		'type'=>array(
 			//'date_cre'=>'date'
 		)
 		,'link'=>array(
-			'dl'=>'<a href="'.dol_buildpath('/exportprodeb/export.php', 1).'?action=generateXML&id_declaration=@dl@" >@dl@</a>'
+			'dl'=>'<a href="'.dol_buildpath('/exportprodeb/export.php', 1).'?action=generateXML&id_declaration=@dl@">'.img_picto('', 'file.png').'</a>'
 		)
 		,'eval'=>array(
 			'numero_declaration'=>'TDebProdouane::getNumeroDeclaration("@val@")'
-			,'fk_statut'=>'TReapproMultiEntrepot::$TStatus["@val@"]'
+			,'type_declaration'=>'TDebProdouane::$TType["@val@"]'
 		)
 		,'liste'=>array(
 			'titre'=>$langs->trans('exportprodebList')
 			,'image'=>img_picto('','title.png', '', 0)
 			,'picto_precedent'=>img_picto('','back.png', '', 0)
 			,'picto_suivant'=>img_picto('','next.png', '', 0)
-			,'noheader'=> (int)isset($_REQUEST['fk_soc']) | (int)isset($_REQUEST['fk_product'])
-			,'messageNothing'=>"Il n'y a aucun ".$langs->trans('Module104993Name')." à afficher"
+			,'messageNothing'=>"Il n'y a aucune déclaration à afficher"
 			,'picto_search'=>img_picto('','search.png', '', 0)
 		)
 		,'title'=>array(

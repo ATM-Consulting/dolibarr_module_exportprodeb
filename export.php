@@ -137,7 +137,7 @@ function _liste() {
 		)
 		,'title'=>array(
 			'numero_declaration'=>$langs->trans('exportprodebNumber')
-			,'type_declaration'=>$langs->trans('exportprodebList')
+			,'type_declaration'=>$langs->trans('exportprodebTypeDeclaration')
 			,'periode'=>$langs->trans('exportprodebPeriod')
 			,'dl'=>$langs->trans('exportprodebDownload')
 		)

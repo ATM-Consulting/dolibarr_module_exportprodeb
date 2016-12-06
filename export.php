@@ -25,7 +25,7 @@ switch($action) {
 		_liste();
 		break;
 	case 'export':
-		_export_xml($type_declaration, $year, $month);
+		_export_xml($type_declaration, $year, str_pad($month, 2, 0, STR_PAD_LEFT));
 	default:
 		_print_form();
 		break;

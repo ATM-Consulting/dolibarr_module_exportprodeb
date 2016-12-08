@@ -105,14 +105,14 @@ class TDebProdouane extends TObjetStd {
 				} else {
 					if($conf->global->EXPORT_PRO_DEB_CATEG_FRAISDEPORT > 0 && $categ_fraisdeport->containsObject('product', $res->id_prod)) {
 						$TLinesFraisDePort[] = $res;
-					} else $this->addItemXMl($declaration, $res);
+					} else $this->addItemXMl($declaration, $res, '', $i);
 				}
 				
 				$i++;
 				
 			}
 			
-			if(!empty($TLinesFraisDePort)) $this->addItemFraisDePort($declaration, $TLinesFraisDePort, $type, $categ_fraisdeport);
+			if(!empty($TLinesFraisDePort)) $this->addItemFraisDePort($declaration, $TLinesFraisDePort, $type, $categ_fraisdeport, $i);
 
 			if(count($this->errors) > 0) return 0;
 			
@@ -160,7 +160,7 @@ class TDebProdouane extends TObjetStd {
 		
 	}
 	
-	function addItemXMl(&$declaration, &$res, $code_douane_spe='') {
+	function addItemXMl(&$declaration, &$res, $code_douane_spe='', $i) {
 		
 		$item = $declaration->addChild('Item');
 		$item->addChild('ItemNumber', $i);
@@ -186,7 +186,7 @@ class TDebProdouane extends TObjetStd {
 	/**
 	 * Cette fonction ajoute un item en récupérant le code douane du produit ayant le plus haut montant dans la facture
 	 */
-	function addItemFraisDePort(&$declaration, &$TLinesFraisDePort, $type, &$categ_fraisdeport) {
+	function addItemFraisDePort(&$declaration, &$TLinesFraisDePort, $type, &$categ_fraisdeport, $i) {
 		
 		global $db, $conf;
 		
@@ -230,8 +230,10 @@ class TDebProdouane extends TObjetStd {
 			$resql = $db->query($sql);
 			$ress = $db->fetch_object($resql);
 			
-			$this->addItemXMl($declaration, $res, $ress->customcode);
+			$this->addItemXMl($declaration, $res, $ress->customcode, $i);
 			
+			$i++;
+
 		}
 		
 	}

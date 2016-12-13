@@ -152,6 +152,7 @@ class TDebProdouane extends TObjetStd {
 				INNER JOIN '.MAIN_DB_PREFIX.'societe s ON (s.rowid = f.fk_soc)
 				LEFT JOIN '.MAIN_DB_PREFIX.'c_country c ON (c.rowid = s.fk_pays)
 				WHERE f.fk_statut > 0
+				AND l.product_type = 0
 				AND f.entity = '.$conf->entity.'
 				AND (s.fk_pays <> '.$mysoc->country_id.' OR s.fk_pays IS NULL)
 				AND f.datef BETWEEN "'.$periode_reference.'-01" AND "'.$periode_reference.'-'.date('t').'"';

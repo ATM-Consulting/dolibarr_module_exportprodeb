@@ -44,6 +44,7 @@ class modexportprodeb extends DolibarrModules
 
         $this->db = $db;
 
+		$this->editor_name = 'ATM-Consulting';
 		// Id for module (must be unique).
 		// Use here a free id (See in Home -> System information -> Dolibarr for list of used modules id).
 		$this->numero = 104994; // 104000 to 104999 for ATM CONSULTING
@@ -189,7 +190,7 @@ class modexportprodeb extends DolibarrModules
 		
 		$this->menu[$r]=array('fk_menu'=>0,			// Put 0 if this is a top menu
 				'type'=>'top',			// This is a Top menu entry
-				'titre'=>$langs->trans('Module104994Name'),
+				'titre'=>$langs->trans('exportprodebDouane'),
 				'mainmenu'=>'exportprodeb',
 				'leftmenu'=>'',		// Use 1 if you also want to add left menu entries using this descriptor. Use 0 if left menu entries are defined in a file pre.inc.php (old school).
 				'url'=>'/exportprodeb/export.php',
@@ -203,7 +204,7 @@ class modexportprodeb extends DolibarrModules
 		
 		$this->menu[$r]=array('fk_menu'=>'fk_mainmenu=exportprodeb',			// Put 0 if this is a top menu
 					'type'=>'left',			// This is a Top menu entry
-					'titre'=>$langs->trans('Module104994Name'),
+					'titre'=>$langs->trans('exportprodebDEB'),
 					'mainmenu'=>'exportprodeb',
 					'leftmenu'=>'exportprodeb',
 					'url'=>'/exportprodeb/export.php',
@@ -233,6 +234,45 @@ class modexportprodeb extends DolibarrModules
                     'mainmenu'=>'exportprodeb',
                     'leftmenu'=>'exportprodebList',
                     'url'=>'/exportprodeb/export.php?action=list',
+                    'position'=>100+$r,
+                    'enabled'=>'$conf->exportprodeb->enabled',            // Define condition to show or hide menu entry. Use '$conf->mymodule->enabled' if entry must be visible if module is enabled.
+                    'perms'=>1,          // Use 'perms'=>'$user->rights->mymodule->level1->level2' if you want your menu with a permission rules
+                    'target'=>'',
+                    'user'=>2);             // 0=Menu for internal users, 1=external users, 2=both
+        $r++;
+		
+		$this->menu[$r]=array('fk_menu'=>'fk_mainmenu=exportprodeb',			// Put 0 if this is a top menu
+					'type'=>'left',			// This is a Top menu entry
+					'titre'=>$langs->trans('exportprodebDES'),
+					'mainmenu'=>'exportprodeb',
+					'leftmenu'=>'exportprodes',
+					'url'=>'/exportprodeb/export.php?exporttype=des',
+					'position'=>100+$r,
+					'enabled'=>'$conf->exportprodeb->enabled',			// Define condition to show or hide menu entry. Use '$conf->mymodule->enabled' if entry must be visible if module is enabled.
+					'perms'=>1,			// Use 'perms'=>'$user->rights->mymodule->level1->level2' if you want your menu with a permission rules
+					'target'=>'',
+					'user'=>2);				// 0=Menu for internal users, 1=external users, 2=both
+		$r++;
+		
+		$this->menu[$r]=array('fk_menu'=>'fk_mainmenu=exportprodeb,fk_leftmenu=exportprodes',         // Put 0 if this is a top menu
+                    'type'=>'left',         // This is a Top menu entry
+                    'titre'=>$langs->trans('exportprodesNew'),
+                    'mainmenu'=>'exportprodeb',
+                    'leftmenu'=>'exportprodes_new',
+                 	'url'=>'/exportprodeb/export.php?exporttype=des',
+                    'position'=>100+$r,
+                    'enabled'=>'$conf->exportprodeb->enabled',           // Define condition to show or hide menu entry. Use '$conf->mymodule->enabled' if entry must be visible if module is enabled.
+                    'perms'=>1,          // Use 'perms'=>'$user->rights->mymodule->level1->level2' if you want your menu with a permission rules
+                    'target'=>'',
+                    'user'=>2);             // 0=Menu for internal users, 1=external users, 2=both
+        $r++;
+        
+        $this->menu[$r]=array('fk_menu'=>'fk_mainmenu=exportprodeb,fk_leftmenu=exportprodes',         // Put 0 if this is a top menu
+                    'type'=>'left',         // This is a Top menu entry
+                    'titre'=>$langs->trans('exportprodesList'),
+                    'mainmenu'=>'exportprodeb',
+                    'leftmenu'=>'exportprodes_list',
+                    'url'=>'/exportprodeb/export.php?exporttype=des&action=list',
                     'position'=>100+$r,
                     'enabled'=>'$conf->exportprodeb->enabled',            // Define condition to show or hide menu entry. Use '$conf->mymodule->enabled' if entry must be visible if module is enabled.
                     'perms'=>1,          // Use 'perms'=>'$user->rights->mymodule->level1->level2' if you want your menu with a permission rules

@@ -16,3 +16,6 @@ $PDOdb=new TPDOdb;
 
 $o=new TDebProdouane($PDOdb);
 $o->init_db_by_vars($PDOdb);
+
+$sql = 'UPDATE '.$o->get_table().' SET exporttype="deb" WHERE exporttype IS NULL';
+$PDOdb->Execute($sql);

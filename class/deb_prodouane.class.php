@@ -15,9 +15,11 @@ class TDebProdouane extends TObjetStd {
 		parent::add_champs('numero_declaration,entity','type=entier;');
 		parent::add_champs('type_declaration,periode,mode','type=chaine;');
 		parent::add_champs('content_xml','type=text;');
+		parent::add_champs('exporttype', array('type'=>'string', 'size'=>'10'));
 		parent::start();
 		parent::_init_vars();
 		
+		$this->exporttype = 'deb';
 	}
 	
 	
@@ -73,13 +75,38 @@ class TDebProdouane extends TObjetStd {
 		
 	}
 	
-	function addItemsFact(&$declaration, $type, $periode_reference) {
+	// $type_declaration tjrs = "expedition" à voir si ça évolue
+	function getXMLDes($period_year, $period_month, $type_declaration='expedition')
+	{
+		global $db, $conf, $mysoc;
+		
+		
+		$e = new SimpleXMLElement('<?xml version="1.0" encoding="utf-8" ?><fichier_des></fichier_des>');
+		
+		$declaration_des = $e->addChild('declaration_des');
+		$declaration_des->addChild('num_des', self::getNumeroDeclaration($this->numero_declaration));
+		$declaration_des->addChild('num_tvaFr', $mysoc->tva_intra); // /^FR[a-Z0-9]{2}[0-9]{9}$/  // Doit faire 13 caractères
+		$declaration_des->addChild('mois_des', $period_month);
+		$declaration_des->addChild('an_des', $period_year);
+		
+		
+		/**************Ajout des lignes de factures**************************/
+		$res = self::addItemsFact($declaration_des, $type_declaration, $period_year.'-'.$period_month, 'des');
+		/********************************************************************/
+		
+		$this->errors = array_unique($this->errors);
+
+		if(!empty($res)) return $e->asXML();
+		else return 0;
+	}
+	
+	function addItemsFact(&$declaration, $type, $periode_reference, $exporttype='deb') {
 		
 		global $db, $conf;
 		
 		require_once DOL_DOCUMENT_ROOT . '/categories/class/categorie.class.php';
 		
-		$sql = $this->getSQLFactLines($type, $periode_reference);
+		$sql = $this->getSQLFactLines($type, $periode_reference, $exporttype);
 		
 		$resql = $db->query($sql);
 		
@@ -91,7 +118,7 @@ class TDebProdouane extends TObjetStd {
 				return 0;
 			}
 			
-			if($conf->global->EXPORT_PRO_DEB_CATEG_FRAISDEPORT > 0) {
+			if($exporttype == 'deb' && $conf->global->EXPORT_PRO_DEB_CATEG_FRAISDEPORT > 0) {
 				$categ_fraisdeport = new Categorie($db);
 				$categ_fraisdeport->fetch($conf->global->EXPORT_PRO_DEB_CATEG_FRAISDEPORT);
 				$TLinesFraisDePort = array();
@@ -99,13 +126,20 @@ class TDebProdouane extends TObjetStd {
 			
 			while($res = $db->fetch_object($resql)) {
 				
-				if(empty($res->fk_pays)) {
-					// On n'arrête pas la boucle car on veut savoir quels sont tous les tiers qui n'ont pas de pays renseigné
-					$this->errors[] = 'Pays non renseigné pour le tiers <a href="'.dol_buildpath('/societe/soc.php',1).'?socid='.$res->id_client.'">'.$res->nom.'</a>';
-				} else {
-					if($conf->global->EXPORT_PRO_DEB_CATEG_FRAISDEPORT > 0 && $categ_fraisdeport->containsObject('product', $res->id_prod)) {
-						$TLinesFraisDePort[] = $res;
-					} else $this->addItemXMl($declaration, $res, '', $i);
+				if ($exporttype == 'des')
+				{
+					$this->addItemXMlDes($declaration, $res, '', $i);
+				}
+				else
+				{
+					if(empty($res->fk_pays)) {
+						// On n'arrête pas la boucle car on veut savoir quels sont tous les tiers qui n'ont pas de pays renseigné
+						$this->errors[] = 'Pays non renseigné pour le tiers <a href="'.dol_buildpath('/societe/soc.php',1).'?socid='.$res->id_client.'">'.$res->nom.'</a>';
+					} else {
+						if($conf->global->EXPORT_PRO_DEB_CATEG_FRAISDEPORT > 0 && $categ_fraisdeport->containsObject('product', $res->id_prod)) {
+							$TLinesFraisDePort[] = $res;
+						} else $this->addItemXMl($declaration, $res, '', $i);
+					}	
 				}
 				
 				$i++;
@@ -122,11 +156,11 @@ class TDebProdouane extends TObjetStd {
 		
 	}
 
-	function getSQLFactLines($type, $periode_reference) {
+	function getSQLFactLines($type, $periode_reference, $exporttype='deb') {
 		
 		global $mysoc, $conf;
 		
-		if($type=='expedition') {
+		if($type=='expedition' || $exporttype=='des') {
 			$sql = 'SELECT f.facnumber, f.total as total_ht';
 			$table = 'facture';
 			$table_extraf = 'facture_extrafields';
@@ -152,7 +186,7 @@ class TDebProdouane extends TObjetStd {
 				INNER JOIN '.MAIN_DB_PREFIX.'societe s ON (s.rowid = f.fk_soc)
 				LEFT JOIN '.MAIN_DB_PREFIX.'c_country c ON (c.rowid = s.fk_pays)
 				WHERE f.fk_statut > 0
-				AND l.product_type = 0
+				AND l.product_type = '.($exporttype == 'des' ? 1 : 0).'
 				AND f.entity = '.$conf->entity.'
 				AND (s.fk_pays <> '.$mysoc->country_id.' OR s.fk_pays IS NULL)
 				AND f.datef BETWEEN "'.$periode_reference.'-01" AND "'.$periode_reference.'-'.date('t').'"';
@@ -184,6 +218,14 @@ class TDebProdouane extends TObjetStd {
 		
 	}
 
+	function addItemXMlDes($declaration, &$res, $code_douane_spe='', $i)
+	{
+		$item = $declaration->addChild('ligne_des');
+		$item->addChild('numlin_des', $i);
+		$item->addChild('valeur', round($res->total_ht)); // Montant total ht de la facture (entier attendu)
+		$item->addChild('partner_des', $res->tva_intra); // Représente le numéro TVA du client étranger
+	}
+	
 	/**
 	 * Cette fonction ajoute un item en récupérant le code douane du produit ayant le plus haut montant dans la facture
 	 */
@@ -242,13 +284,14 @@ class TDebProdouane extends TObjetStd {
 	function getNextNumeroDeclaration() {
 		
 		global $db;
-		$resql = $db->query('SELECT MAX(numero_declaration) as max_numero_declaration FROM '.$this->get_table());
+		$resql = $db->query('SELECT MAX(numero_declaration) as max_numero_declaration FROM '.$this->get_table().' WHERE exporttype="'.$this->exporttype.'"');
 		if($resql) $res = $db->fetch_object($resql);
 		
 		return ($res->max_numero_declaration + 1);
 		
 	}
 
+	// La doc impose que le numéro soit un entier positif d'un maximum de 6 caractères
 	static function getNumeroDeclaration($numero) {
 	
 		return str_pad($numero, 6, 0, STR_PAD_LEFT);

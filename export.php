@@ -6,8 +6,10 @@ require_once DOL_DOCUMENT_ROOT . '/core/lib/functions.lib.php';
 dol_include_once('/exportprodeb/class/deb_prodouane.class.php');
 
 $action = GETPOST('action');
+$exporttype = GETPOST('exporttype'); // DEB ou DES
+if (empty($exporttype)) $exporttype = 'deb';
 
-$ATMdb = new TPDOdb;
+$PDOdb = new TPDOdb;
 $ATMform = new TFormCore;
 $formother = new FormOther($db);
 $year = GETPOST('year');
@@ -17,24 +19,26 @@ $type_declaration = GETPOST('type');
 switch($action) {
 	
 	case 'generateXML':
-		$obj = new TDebProdouane($ATMdb);
-		$obj->load($ATMdb, GETPOST('id_declaration'));
+		$obj = new TDebProdouane($PDOdb);
+		$obj->load($PDOdb, GETPOST('id_declaration'));
 		$obj->generateXMLFile();
 		break;
 	case 'list':
-		_liste();
+		_liste($exporttype);
 		break;
 	case 'export':
-		_export_xml($type_declaration, $year, str_pad($month, 2, 0, STR_PAD_LEFT));
+		if ($exporttype == 'deb') _export_xml_deb($type_declaration, $year, str_pad($month, 2, 0, STR_PAD_LEFT));
+		else _export_xml_des($type_declaration, $year, str_pad($month, 2, 0, STR_PAD_LEFT));
 	default:
-		_print_form();
+		if ($exporttype == 'deb') _print_form_deb();
+		else _print_form_des();
 		break;
 
 }
 
 
 
-function _print_form() {
+function _print_form_deb() {
 	
 	global $langs, $ATMform, $formother, $year, $month, $type_declaration;
 	
@@ -84,11 +88,54 @@ function _print_form() {
 	
 }
 
-function _export_xml($type_declaration, $period_year, $period_month) {
+function _print_form_des()
+{
+	global $langs, $ATMform, $formother, $year, $month, $type_declaration;
 	
-	global $ATMdb, $conf;
+	$langs->load('exportprodeb@exportprodeb');
+	$langs->load('main');
 	
-	$obj = new TDebProdouane($ATMdb);
+	llxHeader();
+	print_fiche_titre($langs->trans('exportprodesTitle'));
+	dol_fiche_head();
+
+	print '<form action="'.$_SERVER['PHP_SELF'].'" name="save" method="POST">';
+	print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
+	print '<input type="hidden" name="action" value="export" />';
+	print '<input type="hidden" name="exporttype" value="des" />';
+	print '<input type="hidden" name="type" value="expedition" />'; // Permet d'utiliser le bon select de la requête sql
+	
+	print '<table width="100%" class="noborder" style="background-color: #fff;">';
+	
+	print '<tr class="liste_titre"><td colspan="2">';
+	print 'Paramètres de l\'export';
+	print '</td></tr>';
+	
+	print '<tr>';
+	print '<td>Période d\'analyse</td>';
+	print '<td>';
+	$TabMonth = array();
+	for($i=1;$i<=12;$i++) $TabMonth[$i] = $langs->trans('Month'.str_pad($i, 2, 0, STR_PAD_LEFT));
+	print $ATMform->combo('','month', $TabMonth, empty($month) ? date('m') : $month);
+	print $formother->selectyear(empty($year) ? date('Y') : $year,'year',0, 20, 5);
+	print '</td>';
+	print '</tr>';
+	
+	print '</table>';
+	
+	print '<div class="tabsAction">';
+	print '<input class="butAction" type="submit" value="Exporter XML" />';
+	print '</div>';
+	
+	print '</form>';
+	
+}
+
+function _export_xml_deb($type_declaration, $period_year, $period_month) {
+	
+	global $PDOdb, $conf;
+	
+	$obj = new TDebProdouane($PDOdb);
 	$obj->entity = $conf->entity;
 	$obj->mode = 'O';
 	$obj->periode = $period_year.'-'.$period_month;
@@ -96,16 +143,35 @@ function _export_xml($type_declaration, $period_year, $period_month) {
 	$obj->numero_declaration = $obj->getNextNumeroDeclaration();
 	$obj->content_xml = $obj->getXML('O', $type_declaration, $period_year.'-'.$period_month);
 	if(empty($obj->errors)) {
-		$obj->save($ATMdb);
+		$obj->save($PDOdb);
 		$obj->generateXMLFile();
 	}
 	else setEventMessage($obj->errors, 'warnings');
 	
 }
 
-function _liste() {
+function _export_xml_des($type_declaration, $period_year, $period_month) {
 	
-	global $db, $conf, $ATMdb, $langs;
+	global $PDOdb, $conf;
+	
+	$obj = new TDebProdouane($PDOdb);
+	$obj->entity = $conf->entity;
+	$obj->periode = $period_year.'-'.$period_month;
+	$obj->type_declaration = $type_declaration;
+	$obj->exporttype = 'des';
+	$obj->numero_declaration = $obj->getNextNumeroDeclaration();
+	$obj->content_xml = $obj->getXMLDes($period_year, $period_month, $type_declaration);
+	if(empty($obj->errors)) {
+		$obj->save($PDOdb);
+		$obj->generateXMLFile();
+	}
+	else setEventMessage($obj->errors, 'warnings');
+	
+}
+
+function _liste($exporttype='deb') {
+	
+	global $db, $conf, $PDOdb, $langs;
 	
 	$langs->load('exportprodeb@exportprodeb');
 	
@@ -114,9 +180,9 @@ function _liste() {
 	
 	$sql = 'SELECT numero_declaration, type_declaration, periode, rowid as dl
 			FROM '.MAIN_DB_PREFIX.'deb_prodouane
-			WHERE entity = '.$conf->entity;
+			WHERE entity = '.$conf->entity.' AND exporttype = '.$PDOdb->quote($exporttype);
 	
-	print $l->render($ATMdb, $sql, array(
+	print $l->render($PDOdb, $sql, array(
 		'type'=>array(
 			//'date_cre'=>'date'
 		)
@@ -128,7 +194,7 @@ function _liste() {
 			,'type_declaration'=>'TDebProdouane::$TType["@val@"]'
 		)
 		,'liste'=>array(
-			'titre'=>$langs->trans('exportprodebList')
+			'titre'=>$langs->trans('exportprodebList'.$exporttype)
 			,'image'=>img_picto('','title.png', '', 0)
 			,'picto_precedent'=>img_picto('','back.png', '', 0)
 			,'picto_suivant'=>img_picto('','next.png', '', 0)
